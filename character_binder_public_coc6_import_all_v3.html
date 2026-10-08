@@ -1,0 +1,1731 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>キャラクターノート</title>
+    <!-- データはこのブラウザの localStorage に保存されます。 -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=Zen+Kaku+Gothic+New:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#1E1A22;
+    --ink-soft:#2B2530;
+    --ink-line:#3C3440;
+    --parchment:#F3E9D4;
+    --parchment-dark:#E4D4B0;
+    --brass:#B98A4A;
+    --brass-deep:#8C6530;
+    --ink-text:#2B2530;
+    --cream-text:#F3E9D4;
+    --cream-dim:#C9BFC7;
+    --danger:#A6453D;
+    --danger-deep:#7E332D;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:
+      radial-gradient(ellipse at 20% -10%, #322A38 0%, transparent 55%),
+      radial-gradient(ellipse at 90% 10%, #2A2230 0%, transparent 50%),
+      var(--ink);
+    color:var(--cream-text);
+    font-family:'Zen Kaku Gothic New', sans-serif;
+    min-height:100vh;
+    padding-bottom:80px;
+  }
+  .display{font-family:'Fraunces', serif;}
+
+  header{
+    max-width:1080px;
+    margin:0 auto;
+    padding:56px 28px 28px;
+    display:flex;
+    flex-wrap:wrap;
+    gap:20px;
+    justify-content:space-between;
+    align-items:flex-end;
+    border-bottom:1px solid var(--ink-line);
+  }
+  header h1{
+    font-size:2.4rem;
+    font-weight:600;
+    margin:0 0 6px;
+    letter-spacing:.01em;
+  }
+  header p{
+    margin:0;
+    color:var(--cream-dim);
+    font-size:.92rem;
+  }
+  .toolbar{
+    max-width:1080px;
+    margin:0 auto;
+    padding:28px 28px 0;
+    display:flex;
+    flex-wrap:wrap;
+    gap:14px;
+    align-items:center;
+  }
+  .search-wrap{
+    flex:1 1 240px;
+    position:relative;
+  }
+  .search-wrap input{
+    width:100%;
+    background:var(--ink-soft);
+    border:1px solid var(--ink-line);
+    border-radius:9px;
+    padding:11px 14px;
+    color:var(--cream-text);
+    font-family:inherit;
+    font-size:.95rem;
+  }
+  .search-wrap input:focus{
+    outline:none;
+    border-color:var(--brass);
+  }
+  .search-wrap input::placeholder{color:#7A7182;}
+
+  button{font-family:inherit; cursor:pointer;}
+  .btn-primary{
+    background:var(--brass);
+    color:#231A10;
+    border:none;
+    border-radius:9px;
+    padding:11px 20px;
+    font-weight:700;
+    font-size:.95rem;
+    transition:transform .15s ease, background .15s ease;
+  }
+  .btn-primary:hover{background:#CDA05D; transform:translateY(-1px);}
+
+  .board{
+    max-width:1080px;
+    margin:0 auto;
+    padding:40px 28px 0;
+    display:grid;
+    grid-template-columns:repeat(auto-fill, minmax(230px, 1fr));
+    gap:34px 26px;
+  }
+
+  .empty-state{
+    max-width:1080px;
+    margin:60px auto 0;
+    padding:0 28px;
+    text-align:center;
+    color:var(--cream-dim);
+  }
+  .empty-state .display{font-size:1.4rem; color:var(--cream-text); margin-bottom:10px;}
+
+  .card{
+    background:var(--parchment);
+    color:var(--ink-text);
+    border-radius:3px;
+    padding:18px 16px 16px;
+    box-shadow:0 10px 22px rgba(0,0,0,.35), 0 2px 0 rgba(255,255,255,.15) inset;
+    cursor:pointer;
+    position:relative;
+    transition:transform .18s ease, box-shadow .18s ease;
+  }
+  .card::before{
+    content:"";
+    position:absolute;
+    top:-9px;
+    left:50%;
+    transform:translateX(-50%);
+    width:14px;
+    height:14px;
+    border-radius:50%;
+    background:radial-gradient(circle at 35% 30%, #E3B15E, var(--brass-deep));
+    box-shadow:0 3px 4px rgba(0,0,0,.4);
+  }
+  .card:hover{
+    transform:translateY(-6px) rotate(0deg) !important;
+    box-shadow:0 16px 26px rgba(0,0,0,.45);
+  }
+  .card-thumb{
+    width:100%;
+    aspect-ratio:4/3;
+    border-radius:2px;
+    background-size:cover;
+    background-position:center;
+    background-color:var(--parchment-dark);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    margin-bottom:12px;
+    overflow:hidden;
+  }
+  .card-thumb .monogram{
+    font-family:'Fraunces', serif;
+    font-size:2.6rem;
+    color:var(--brass-deep);
+    opacity:.55;
+  }
+  .card-name{
+    font-family:'Fraunces', serif;
+    font-size:1.15rem;
+    font-weight:600;
+    margin:0 0 3px;
+    line-height:1.3;
+  }
+  .card-system{
+    font-size:.78rem;
+    color:var(--brass-deep);
+    margin:0 0 8px;
+    font-weight:700;
+  }
+  .card-tagline{
+    font-size:.83rem;
+    color:#5A5060;
+    margin:0 0 10px;
+    line-height:1.5;
+    min-height:1.2em;
+  }
+  .card-tags{
+    display:flex;
+    flex-wrap:wrap;
+    gap:6px;
+  }
+  .tag-chip{
+    font-size:.7rem;
+    background:rgba(140,101,48,.15);
+    color:var(--brass-deep);
+    padding:3px 9px;
+    border-radius:100px;
+    font-weight:700;
+  }
+
+  /* Overlay */
+  .overlay{
+    position:fixed;
+    inset:0;
+    background:rgba(15,12,18,.72);
+    backdrop-filter:blur(2px);
+    display:none;
+    align-items:flex-start;
+    justify-content:center;
+    padding:40px 20px;
+    overflow-y:auto;
+    z-index:50;
+  }
+  .overlay.open{display:flex;}
+  .sheet{
+    background:var(--parchment);
+    color:var(--ink-text);
+    width:100%;
+    max-width:680px;
+    border-radius:8px;
+    padding:32px 32px 28px;
+    position:relative;
+    box-shadow:0 30px 60px rgba(0,0,0,.5);
+  }
+  .sheet-close{
+    position:absolute;
+    top:18px;
+    right:18px;
+    background:none;
+    border:none;
+    font-size:1.4rem;
+    color:#8A7F6E;
+    line-height:1;
+  }
+  .sheet-close:hover{color:var(--ink-text);}
+
+  .sheet-head{
+    display:flex;
+    gap:20px;
+    margin-bottom:20px;
+  }
+  .sheet-thumb{
+    width:120px;
+    height:120px;
+    flex-shrink:0;
+    border-radius:6px;
+    background-size:cover;
+    background-position:center;
+    background-color:var(--parchment-dark);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+  .sheet-thumb .monogram{
+    font-family:'Fraunces', serif;
+    font-size:2.4rem;
+    color:var(--brass-deep);
+    opacity:.55;
+  }
+  .sheet-title h2{
+    font-family:'Fraunces', serif;
+    font-size:1.6rem;
+    margin:2px 0 4px;
+  }
+  .sheet-title .sys{
+    color:var(--brass-deep);
+    font-weight:700;
+    font-size:.85rem;
+    margin-bottom:8px;
+  }
+  .sheet-title .tagline{
+    font-size:.9rem;
+    color:#5A5060;
+    line-height:1.5;
+  }
+
+  .sheet-section{
+    margin-top:18px;
+    padding-top:16px;
+    border-top:1px solid rgba(140,101,48,.25);
+  }
+  .sheet-section h3{
+    font-size:.78rem;
+    letter-spacing:.03em;
+    color:var(--brass-deep);
+    margin:0 0 8px;
+    font-weight:700;
+  }
+  .sheet-section .body-text{
+    white-space:pre-wrap;
+    font-size:.92rem;
+    line-height:1.75;
+  }
+
+  .sheet-actions{
+    margin-top:24px;
+    display:flex;
+    gap:10px;
+    justify-content:flex-end;
+  }
+  .btn-ghost{
+    background:none;
+    border:1px solid rgba(140,101,48,.4);
+    color:var(--brass-deep);
+    border-radius:8px;
+    padding:9px 16px;
+    font-weight:700;
+    font-size:.85rem;
+  }
+  .btn-ghost:hover{background:rgba(140,101,48,.1);}
+  .btn-danger{
+    background:none;
+    border:1px solid rgba(166,69,61,.4);
+    color:var(--danger-deep);
+    border-radius:8px;
+    padding:9px 16px;
+    font-weight:700;
+    font-size:.85rem;
+  }
+  .btn-danger:hover{background:rgba(166,69,61,.1);}
+
+  /* Form */
+  .form-grid{display:flex; flex-direction:column; gap:14px;}
+  .form-row{display:flex; gap:14px; flex-wrap:wrap;}
+  .form-field{flex:1 1 200px; display:flex; flex-direction:column; gap:6px;}
+  .form-field label{
+    font-size:.78rem;
+    font-weight:700;
+    color:var(--brass-deep);
+  }
+  .form-field input, .form-field textarea, .form-field select{
+    font-family:inherit;
+    font-size:.9rem;
+    padding:9px 11px;
+    border-radius:6px;
+    border:1px solid rgba(140,101,48,.35);
+    background:#FBF5E8;
+    color:var(--ink-text);
+    resize:vertical;
+  }
+  .form-field input:focus, .form-field textarea:focus, .form-field select:focus{
+    outline:none;
+    border-color:var(--brass);
+  }
+  .form-field .hint{font-size:.72rem; color:#8A7F6E; font-weight:400;}
+
+  .form-subheading{
+    margin:22px 0 10px;
+    padding-top:16px;
+    border-top:1px solid rgba(140,101,48,.25);
+    font-size:.95rem;
+    font-weight:700;
+    color:var(--ink-text);
+  }
+  .form-subheading:first-child{margin-top:0; padding-top:0; border-top:none;}
+
+  .field-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fill, minmax(110px, 1fr));
+    gap:10px;
+  }
+  .field-grid .form-field label{font-size:.7rem;}
+
+  .skill-category-block{margin-bottom:18px;}
+  .skill-category-block h4{
+    font-size:.8rem;
+    color:var(--brass-deep);
+    margin:0 0 8px;
+    font-weight:700;
+  }
+
+  .repeat-row{
+    display:flex;
+    gap:8px;
+    margin-bottom:8px;
+    align-items:center;
+  }
+  .repeat-row input{
+    flex:1;
+    min-width:0;
+    font-family:inherit;
+    font-size:.88rem;
+    padding:8px 10px;
+    border-radius:6px;
+    border:1px solid rgba(140,101,48,.35);
+    background:#FBF5E8;
+    color:var(--ink-text);
+  }
+  .repeat-row input:focus{outline:none; border-color:var(--brass);}
+  .row-del{
+    flex:0 0 auto;
+    background:none;
+    border:1px solid rgba(166,69,61,.4);
+    color:var(--danger-deep);
+    border-radius:6px;
+    width:32px;
+    height:32px;
+    font-size:1rem;
+    line-height:1;
+  }
+  .row-del:hover{background:rgba(166,69,61,.1);}
+
+  .btn-add-row{
+    background:none;
+    border:1px dashed rgba(140,101,48,.5);
+    color:var(--brass-deep);
+    border-radius:6px;
+    padding:7px 14px;
+    font-size:.8rem;
+    font-weight:700;
+  }
+  .btn-add-row:hover{background:rgba(140,101,48,.08);}
+
+  .kv-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fill, minmax(140px, 1fr));
+    gap:8px 16px;
+  }
+  .kv{
+    display:flex;
+    justify-content:space-between;
+    gap:8px;
+    font-size:.85rem;
+    border-bottom:1px dotted rgba(140,101,48,.3);
+    padding-bottom:3px;
+  }
+  .kv .k{color:var(--brass-deep); font-weight:700;}
+  .kv2, .kv3{
+    display:grid;
+    gap:10px;
+    font-size:.85rem;
+    padding:6px 0;
+    border-bottom:1px dotted rgba(140,101,48,.25);
+  }
+  .kv2{grid-template-columns:1fr 2fr;}
+  .kv3{grid-template-columns:1fr 1fr 2fr;}
+  .scenario-list{margin:0; padding-left:18px; font-size:.9rem; line-height:1.85;}
+
+  .custom-section-row{
+    margin-bottom:14px;
+    padding:12px;
+    border:1px solid rgba(140,101,48,.3);
+    border-radius:8px;
+    background:rgba(255,255,255,.18);
+  }
+  .custom-section-head{
+    display:flex;
+    gap:8px;
+    margin-bottom:8px;
+    align-items:center;
+  }
+  .custom-section-head input{
+    flex:1;
+    font-family:inherit;
+    font-size:.9rem;
+    font-weight:700;
+    padding:8px 10px;
+    border-radius:6px;
+    border:1px solid rgba(140,101,48,.35);
+    background:#FBF5E8;
+    color:var(--ink-text);
+  }
+  .custom-section-head input:focus{outline:none; border-color:var(--brass);}
+  .custom-section-row textarea{
+    width:100%;
+    font-family:inherit;
+    font-size:.88rem;
+    padding:8px 10px;
+    border-radius:6px;
+    border:1px solid rgba(140,101,48,.35);
+    background:#FBF5E8;
+    color:var(--ink-text);
+    resize:vertical;
+  }
+  .custom-section-row textarea:focus{outline:none; border-color:var(--brass);}
+
+  .import-box{
+    padding:12px 14px;
+    border:1px dashed rgba(140,101,48,.5);
+    border-radius:8px;
+    background:rgba(255,255,255,.15);
+  }
+  .import-box input[type="file"]{
+    font-family:inherit;
+    font-size:.85rem;
+    color:var(--ink-text);
+  }
+  .import-box .hint{color:#8A7F6E; font-size:.75rem; line-height:1.6;}
+
+  .toast{
+    position:fixed;
+    bottom:24px;
+    left:50%;
+    transform:translateX(-50%) translateY(20px);
+    background:var(--ink-soft);
+    border:1px solid var(--ink-line);
+    color:var(--cream-text);
+    padding:11px 20px;
+    border-radius:9px;
+    font-size:.85rem;
+    opacity:0;
+    transition:opacity .25s ease, transform .25s ease;
+    pointer-events:none;
+    z-index:100;
+  }
+  .toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
+
+  @media (max-width:520px){
+    .sheet-head{flex-direction:column;}
+    .sheet-thumb{width:100%; height:180px;}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1 class="display">キャラクターノート</h1>
+    <p>これまで作ったTRPGキャラクターを、ここにまとめて留めておく場所。</p>
+  </div>
+</header>
+
+<div class="toolbar">
+  <div class="search-wrap">
+    <input id="searchInput" type="text" placeholder="名前・システム・タグで検索">
+  </div>
+  <button class="btn-primary" id="openAddBtn">＋ 新しいキャラクターを追加</button>
+</div>
+
+<div class="board" id="board"></div>
+<div class="empty-state" id="emptyState" style="display:none;">
+  <div class="display">まだキャラクターがいません</div>
+  <div>「＋ 新しいキャラクターを追加」から、最初の一人を登録してみてください。</div>
+</div>
+
+<!-- 詳細シート -->
+<div class="overlay" id="detailOverlay">
+  <div class="sheet" id="detailSheet"></div>
+</div>
+
+<!-- 追加/編集フォーム -->
+<div class="overlay" id="formOverlay">
+  <div class="sheet">
+    <button class="sheet-close" id="formCloseBtn">&times;</button>
+    <h2 class="display" id="formTitle" style="margin-top:0;">新しいキャラクター</h2>
+    <div class="form-grid">
+      <div class="form-row">
+        <div class="form-field">
+          <label>名前 *</label>
+          <input type="text" id="f-name" placeholder="キャラクター名">
+        </div>
+        <div class="form-field">
+          <label>使用システム</label>
+          <select id="f-system"></select>
+        </div>
+      </div>
+      <div class="form-field">
+        <label>画像URL <span class="hint">(任意・空欄なら頭文字を表示)</span></label>
+        <input type="text" id="f-image" placeholder="https://...">
+      </div>
+      <div class="form-field">
+        <label>一言・キャッチコピー</label>
+        <input type="text" id="f-tagline" placeholder="このキャラクターを一言で表すと">
+      </div>
+      <div class="form-field">
+        <label>タグ <span class="hint">(カンマ区切り)</span></label>
+        <input type="text" id="f-tags" placeholder="例: 探索者, 女性, シナリオA">
+      </div>
+      <div id="genericFields">
+        <div class="form-field">
+          <label>能力値・技能</label>
+          <textarea id="f-stats" rows="4" placeholder="STR 12 / CON 13 / POW 15 ...&#10;図書館 60% / 目星 45% ..."></textarea>
+        </div>
+        <div class="form-field">
+          <label>持ち物・装備</label>
+          <textarea id="f-equipment" rows="3" placeholder="所持品や装備を自由に"></textarea>
+        </div>
+        <div class="form-field">
+          <label>背景・メモ</label>
+          <textarea id="f-memo" rows="5" placeholder="人物像、経歴、セッションでの出来事など"></textarea>
+        </div>
+      </div>
+
+      <div id="coc6Fields" style="display:none;">
+        <div class="form-subheading" style="margin-top:0; padding-top:0; border-top:none;">
+          いあきゃらテキストの読み込み <span class="hint">(.txt / 6版形式・現在は「基本情報」のみ対応)</span>
+        </div>
+        <div class="import-box">
+          <input type="file" id="coc-import-file" accept=".txt,text/plain">
+          <p class="hint" style="margin:8px 0 0;">「いあきゃらテキスト」形式の.txtを選ぶと、基本情報・能力値・技能値・武器・所持品・通過シナリオ・メモ・自由記述カテゴリを自動で読み込みます。能力値は「現在値」、正気度は「/」の左側、DBは右側の文字列（空白除去）を入力します。技能は「合計」と「初期値」が異なるものだけ登録します。</p>
+        </div>
+
+        <div class="form-subheading">基本情報</div>
+        <div class="field-grid" id="basicInfoGrid"></div>
+
+        <div class="form-subheading">能力値</div>
+        <div class="field-grid" id="abilityGrid"></div>
+
+        <div class="form-subheading">技能値</div>
+        <div id="skillCategoriesContainer"></div>
+
+        <div class="form-subheading">武器</div>
+        <div id="weaponRows"></div>
+        <button type="button" class="btn-add-row" data-target="weapon">＋ 武器を追加</button>
+
+        <div class="form-subheading">所持品</div>
+        <div id="possessionRows"></div>
+        <button type="button" class="btn-add-row" data-target="possession">＋ 所持品を追加</button>
+
+        <div class="form-subheading">通過シナリオ</div>
+        <div id="scenarioRows"></div>
+        <button type="button" class="btn-add-row" data-target="scenario">＋ シナリオを追加</button>
+
+        <div class="form-subheading">メモ</div>
+        <div class="form-field">
+          <textarea id="coc-memo" rows="4" placeholder="自由記述"></textarea>
+        </div>
+
+        <div class="form-subheading">追加カテゴリ <span class="hint">(カテゴリ名を決めて自由記述欄を追加できます)</span></div>
+        <div id="customSectionRows"></div>
+        <button type="button" class="btn-add-row" data-target="customSection">＋ カテゴリを追加</button>
+      </div>
+    </div>
+    <div class="sheet-actions">
+      <button class="btn-ghost" id="formCancelBtn">キャンセル</button>
+      <button class="btn-primary" id="formSaveBtn">保存する</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ▼ 使用システムの候補一覧。ここに文字列を追加/削除すれば、プルダウンの選択肢が増減します。
+const SYSTEM_OPTIONS = [
+  "クトゥルフ神話TRPG (CoC6版)",
+  "新クトゥルフTRPG (CoC7版)",
+  "初音ミクTRPG",
+  "エモクロアTRPG",
+  "ガイアケアTRPG",
+];
+// ▲ ここまで
+
+// クトゥルフ神話TRPG(CoC6版)を選んだ時に専用フォームへ切り替えるための識別ラベル
+const COC6_LABEL = "クトゥルフ神話TRPG (CoC6版)";
+
+const BASIC_INFO_FIELDS = [
+  {key:'reading', label:'名前の読み'},
+  {key:'occupation', label:'職業'},
+  {key:'age', label:'年齢'},
+  {key:'gender', label:'性別'},
+  {key:'height', label:'身長'},
+  {key:'origin', label:'出身'},
+  {key:'hairColor', label:'髪色'},
+  {key:'eyeColor', label:'瞳色'},
+  {key:'skinColor', label:'肌色'},
+];
+
+const ABILITY_FIELDS = [
+  {key:'STR', label:'STR'},
+  {key:'CON', label:'CON'},
+  {key:'POW', label:'POW'},
+  {key:'DEX', label:'DEX'},
+  {key:'APP', label:'APP'},
+  {key:'SIZ', label:'SIZ'},
+  {key:'INT', label:'INT'},
+  {key:'EDU', label:'EDU'},
+  {key:'HP', label:'HP'},
+  {key:'MP', label:'MP'},
+  {key:'DB', label:'DB'},
+  {key:'SAN', label:'正気度'},
+  {key:'idea', label:'アイデア'},
+  {key:'luck', label:'幸運'},
+  {key:'knowledge', label:'知識'},
+];
+
+const SKILL_CATEGORIES = [
+  {key:'combat', label:'戦闘技能'},
+  {key:'explore', label:'探索技能'},
+  {key:'action', label:'行動技能'},
+  {key:'negotiation', label:'交渉技能'},
+  {key:'knowledge', label:'知識技能'},
+];
+
+// 「＋追加」ボタン(data-target)ごとに、追加先コンテナと入力項目を定義
+const ROW_CONFIGS = {
+  weapon: {containerId:'weaponRows', fields:[{key:'name', label:'武器名'}, {key:'damage', label:'ダメージ'}, {key:'note', label:'備考'}]},
+  possession: {containerId:'possessionRows', fields:[{key:'name', label:'品名'}, {key:'note', label:'備考'}]},
+  scenario: {containerId:'scenarioRows', fields:[{key:'name', label:'シナリオ名'}, {key:'memo', label:'メモ'}]},
+};
+SKILL_CATEGORIES.forEach(cat=>{
+  ROW_CONFIGS['skill_' + cat.key] = {
+    containerId: 'skillRows_' + cat.key,
+    fields: [{key:'name', label:'能力名'}, {key:'value', label:'技能値'}],
+  };
+});
+
+let characters = [];
+let editingId = null;
+let viewingId = null;
+
+const board = document.getElementById('board');
+const emptyState = document.getElementById('emptyState');
+const searchInput = document.getElementById('searchInput');
+const detailOverlay = document.getElementById('detailOverlay');
+const detailSheet = document.getElementById('detailSheet');
+const formOverlay = document.getElementById('formOverlay');
+const formTitle = document.getElementById('formTitle');
+const toastEl = document.getElementById('toast');
+
+function showToast(msg){
+  toastEl.textContent = msg;
+  toastEl.classList.add('show');
+  setTimeout(()=>toastEl.classList.remove('show'), 1800);
+}
+
+function seededRotation(id){
+  let h = 0;
+  for(let i=0;i<id.length;i++){ h = (h*31 + id.charCodeAt(i)) % 1000; }
+  return ((h % 60) / 10) - 3; // -3deg ~ +3deg
+}
+
+function escapeHtml(str){
+  return (str || '').replace(/[&<>"']/g, c => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  }[c]));
+}
+
+async function loadCharacters(){
+  try{
+    const saved = localStorage.getItem('characters');
+    characters = saved ? JSON.parse(saved) : [];
+  }catch(e){
+    console.error('キャラクター読み込みエラー:', e);
+    characters = [];
+  }
+  render();
+}
+
+async function saveCharacters(){
+  try{
+    localStorage.setItem('characters', JSON.stringify(characters));
+  }catch(e){
+    showToast('保存中にエラーが発生しました');
+    console.error('キャラクター保存エラー:', e);
+  }
+}
+
+function render(){
+  const q = searchInput.value.trim().toLowerCase();
+  const filtered = characters.filter(c=>{
+    if(!q) return true;
+    const hay = [c.name, c.system, ...(c.tags||[])].join(' ').toLowerCase();
+    return hay.includes(q);
+  });
+
+  board.innerHTML = '';
+  emptyState.style.display = characters.length === 0 ? 'block' : 'none';
+
+  filtered.forEach(c=>{
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.style.transform = `rotate(${seededRotation(c.id)}deg)`;
+    const thumbInner = c.imageUrl
+      ? `style="background-image:url('${escapeHtml(c.imageUrl)}');"`
+      : '';
+    const monogram = c.imageUrl ? '' : `<span class="monogram">${escapeHtml((c.name||'?').charAt(0))}</span>`;
+    card.innerHTML = `
+      <div class="card-thumb" ${thumbInner}>${monogram}</div>
+      <p class="card-name">${escapeHtml(c.name)}</p>
+      <p class="card-system">${escapeHtml(c.system || '')}</p>
+      <p class="card-tagline">${escapeHtml(c.tagline || '')}</p>
+      <div class="card-tags">${(c.tags||[]).map(t=>`<span class="tag-chip">${escapeHtml(t)}</span>`).join('')}</div>
+    `;
+    card.addEventListener('click', ()=>openDetail(c.id));
+    board.appendChild(card);
+  });
+}
+
+function openDetail(id){
+  const c = characters.find(x=>x.id===id);
+  if(!c) return;
+  viewingId = id;
+  const thumbInner = c.imageUrl
+    ? `style="background-image:url('${escapeHtml(c.imageUrl)}');"`
+    : '';
+  const monogram = c.imageUrl ? '' : `<span class="monogram">${escapeHtml((c.name||'?').charAt(0))}</span>`;
+
+  detailSheet.innerHTML = `
+    <button class="sheet-close" id="detailCloseBtn">&times;</button>
+    <div class="sheet-head">
+      <div class="sheet-thumb" ${thumbInner}>${monogram}</div>
+      <div class="sheet-title">
+        <h2 class="display">${escapeHtml(c.name)}</h2>
+        <div class="sys">${escapeHtml(c.system || 'システム未設定')}</div>
+        <div class="tagline">${escapeHtml(c.tagline || '')}</div>
+      </div>
+    </div>
+    ${(c.tags && c.tags.length) ? `<div class="card-tags">${c.tags.map(t=>`<span class="tag-chip">${escapeHtml(t)}</span>`).join('')}</div>` : ''}
+    ${c.system === COC6_LABEL && c.coc6 ? renderCoC6DetailHtml(c) : `
+      ${c.stats ? `<div class="sheet-section"><h3>能力値・技能</h3><div class="body-text">${escapeHtml(c.stats)}</div></div>` : ''}
+      ${c.equipment ? `<div class="sheet-section"><h3>持ち物・装備</h3><div class="body-text">${escapeHtml(c.equipment)}</div></div>` : ''}
+      ${c.memo ? `<div class="sheet-section"><h3>背景・メモ</h3><div class="body-text">${escapeHtml(c.memo)}</div></div>` : ''}
+    `}
+    <div class="sheet-actions">
+      <button class="btn-danger" id="deleteBtn">削除する</button>
+      <button class="btn-ghost" id="editBtn">編集する</button>
+    </div>
+  `;
+  document.getElementById('detailCloseBtn').addEventListener('click', closeDetail);
+  document.getElementById('editBtn').addEventListener('click', ()=>{ closeDetail(); openForm(c.id); });
+  document.getElementById('deleteBtn').addEventListener('click', ()=>deleteCharacter(c.id));
+  detailOverlay.classList.add('open');
+}
+function closeDetail(){ detailOverlay.classList.remove('open'); viewingId=null; }
+
+async function deleteCharacter(id){
+  if(!confirm('このキャラクターを削除します。よろしいですか？')) return;
+  characters = characters.filter(c=>c.id!==id);
+  await saveCharacters();
+  closeDetail();
+  render();
+  showToast('削除しました');
+}
+
+function buildFieldGrid(containerId, fieldsConfig, idPrefix){
+  const container = document.getElementById(containerId);
+  container.innerHTML = fieldsConfig.map(f => `
+    <div class="form-field">
+      <label>${escapeHtml(f.label)}</label>
+      <input type="text" id="${idPrefix}-${f.key}">
+    </div>
+  `).join('');
+}
+
+function buildSkillCategoriesUI(){
+  const container = document.getElementById('skillCategoriesContainer');
+  container.innerHTML = SKILL_CATEGORIES.map(cat => `
+    <div class="skill-category-block">
+      <h4>${escapeHtml(cat.label)}</h4>
+      <div id="skillRows_${cat.key}"></div>
+      <button type="button" class="btn-add-row" data-target="skill_${cat.key}">＋ 追加</button>
+    </div>
+  `).join('');
+}
+
+function addRepeatRow(targetKey, values){
+  values = values || {};
+  const config = ROW_CONFIGS[targetKey];
+  if(!config) return;
+  const container = document.getElementById(config.containerId);
+  const row = document.createElement('div');
+  row.className = 'repeat-row';
+  row.innerHTML = config.fields.map(f =>
+    `<input type="text" data-field="${f.key}" placeholder="${escapeHtml(f.label)}" value="${escapeHtml(values[f.key]||'')}">`
+  ).join('') + `<button type="button" class="row-del">×</button>`;
+  row.querySelector('.row-del').addEventListener('click', ()=> row.remove());
+  container.appendChild(row);
+}
+
+function clearRepeatRows(targetKey){
+  const config = ROW_CONFIGS[targetKey];
+  if(!config) return;
+  document.getElementById(config.containerId).innerHTML = '';
+}
+
+function collectRows(targetKey){
+  const config = ROW_CONFIGS[targetKey];
+  if(!config) return [];
+  const rows = document.querySelectorAll(`#${config.containerId} .repeat-row`);
+  return Array.from(rows).map(row=>{
+    const obj = {};
+    config.fields.forEach(f=>{
+      obj[f.key] = row.querySelector(`[data-field="${f.key}"]`).value.trim();
+    });
+    return obj;
+  }).filter(obj => Object.values(obj).some(v => v));
+}
+
+function addCustomSection(values){
+  values = values || {};
+  const container = document.getElementById('customSectionRows');
+  const row = document.createElement('div');
+  row.className = 'custom-section-row';
+  row.innerHTML = `
+    <div class="custom-section-head">
+      <input type="text" data-field="title" placeholder="カテゴリ名" value="${escapeHtml(values.title||'')}">
+      <button type="button" class="row-del">×</button>
+    </div>
+    <textarea data-field="content" rows="4" placeholder="自由記述">${escapeHtml(values.content||'')}</textarea>
+  `;
+  row.querySelector('.row-del').addEventListener('click', ()=> row.remove());
+  container.appendChild(row);
+}
+
+function clearCustomSections(){
+  document.getElementById('customSectionRows').innerHTML = '';
+}
+
+function collectCustomSections(){
+  const rows = document.querySelectorAll('#customSectionRows .custom-section-row');
+  return Array.from(rows).map(row => ({
+    title: row.querySelector('[data-field="title"]').value.trim(),
+    content: row.querySelector('[data-field="content"]').value.trim(),
+  })).filter(s => s.title || s.content);
+}
+
+// 「いあきゃらテキスト」形式の【基本情報】ブロックを解析し、対応する項目を抽出する。
+// ・"ラベル: 値" の形を1行/1セグメントずつ読み取る（1行に " / " 区切りで複数ある場合も対応）
+// ・値が "*文字列*" のようにアスタリスクで囲まれている場合は取り除く
+// ・値が "skip"（大文字小文字問わず）の場合はそのフィールドを無視する
+// ・対応する小カテゴリが無いラベル(体重・タグ等)は読み飛ばす
+function parseIaCharaBasicInfo(text){
+  const result = {};
+  const lines = text.split(/\r?\n/);
+
+  // ============================================================
+  // 基本情報
+  // ============================================================
+  lines.forEach(line=>{
+    line.split('/').forEach(segment=>{
+      const m = segment.match(/^\s*([^:：]+)[:：]\s*(.*?)\s*$/);
+      if(!m) return;
+
+      const label = m[1].trim();
+      const rawValue = m[2].trim();
+
+      const placeholderMatch = rawValue.match(/^\*([^*]+)\*/);
+      const value = placeholderMatch
+        ? placeholderMatch[1].trim()
+        : rawValue.replace(/\*/g, '').trim();
+
+      if(!value || value.toLowerCase() === 'skip') return;
+
+      switch(label){
+        case '名前': {
+          const nameMatch = rawValue.match(/^\*([^*]+)\*\s*\(\s*\*([^*]+)\*\s*\)/);
+          if(nameMatch){
+            if(nameMatch[1].trim().toLowerCase() !== 'skip'){
+              result.name = nameMatch[1].trim();
+            }
+            if(nameMatch[2].trim().toLowerCase() !== 'skip'){
+              result.reading = nameMatch[2].trim();
+            }
+          }else{
+            const plainNameMatch = value.match(/^(.*?)\s*\(([^)]*)\)\s*$/);
+            if(plainNameMatch){
+              result.name = plainNameMatch[1].trim();
+              if(plainNameMatch[2].trim()){
+                result.reading = plainNameMatch[2].trim();
+              }
+            }else{
+              result.name = value;
+            }
+          }
+          break;
+        }
+        case '職業': result.occupation = value; break;
+        case '年齢': result.age = value; break;
+        case '性別': result.gender = value; break;
+        case '身長': result.height = value; break;
+        case '出身': result.origin = value; break;
+        case '髪の色': result.hairColor = value; break;
+        case '瞳の色': result.eyeColor = value; break;
+        case '肌の色': result.skinColor = value; break;
+        default: break;
+      }
+    });
+  });
+
+  // ============================================================
+  // CoC6版 能力値
+  // ============================================================
+  const abilityMap = {
+    'STR': 'STR',
+    'CON': 'CON',
+    'POW': 'POW',
+    'DEX': 'DEX',
+    'APP': 'APP',
+    'SIZ': 'SIZ',
+    'INT': 'INT',
+    'EDU': 'EDU',
+    'HP': 'HP',
+    'MP': 'MP',
+    '正気度': 'SAN',
+    'IDE': 'idea',
+    '幸運': 'luck',
+    '知識': 'knowledge',
+  };
+
+  const abilityValues = {};
+  let inAbilitySection = false;
+
+  for(const line of lines){
+    const trimmed = line.trim();
+    if(!trimmed) continue;
+
+    if(trimmed === '【能力値】'){
+      inAbilitySection = true;
+      continue;
+    }
+
+    if(inAbilitySection && trimmed === '【技能値】') break;
+    if(!inAbilitySection) continue;
+
+    if(trimmed.startsWith('現在値')) continue;
+
+    const sanMatch = trimmed.match(/^正気度\s+(\d+)\s*\/\s*\d+/);
+    if(sanMatch){
+      abilityValues.SAN = sanMatch[1];
+      continue;
+    }
+
+    const dbMatch = trimmed.match(/^DB\s+(.*)$/);
+    if(dbMatch){
+      const dbValue = dbMatch[1].replace(/\s+/g, '');
+      if(dbValue && dbValue.toLowerCase() !== 'skip'){
+        abilityValues.DB = dbValue;
+      }
+      continue;
+    }
+
+    const tokens = trimmed.split(/\s+/);
+    if(tokens.length < 2) continue;
+
+    const key = abilityMap[tokens[0]];
+    if(!key) continue;
+
+    const currentValue = tokens[1].trim();
+    if(!currentValue || currentValue.toLowerCase() === 'skip') continue;
+
+    abilityValues[key] = currentValue;
+  }
+
+  result.abilities = abilityValues;
+
+  // ============================================================
+  // CoC6版 技能値
+  // ============================================================
+  const skillCategoryMap = {
+    '戦闘技能': 'combat',
+    '探索技能': 'explore',
+    '行動技能': 'action',
+    '交渉技能': 'negotiation',
+    '知識技能': 'knowledge',
+  };
+
+  const skills = {
+    combat: [],
+    explore: [],
+    action: [],
+    negotiation: [],
+    knowledge: [],
+  };
+
+  let currentSkillCategory = null;
+  let inSkillSection = false;
+
+  for(const line of lines){
+    const trimmed = line.trim();
+    if(!trimmed) continue;
+
+    if(trimmed === '【技能値】'){
+      inSkillSection = true;
+      currentSkillCategory = null;
+      continue;
+    }
+
+    if(inSkillSection && trimmed === '【武器】') break;
+    if(!inSkillSection) continue;
+
+    const categoryMatch = trimmed.match(/^『([^』]+)』$/);
+    if(categoryMatch){
+      currentSkillCategory =
+        skillCategoryMap[categoryMatch[1].trim()] || null;
+      continue;
+    }
+
+    if(!currentSkillCategory) continue;
+    if(trimmed.startsWith('技能名')) continue;
+    if(trimmed.startsWith('職業ポイント:') ||
+       trimmed.startsWith('興味ポイント:')) continue;
+
+    const tokens = trimmed.split(/\s+/);
+    if(tokens.length < 3) continue;
+
+    let totalIndex = -1;
+    for(let i=1; i<tokens.length; i++){
+      if(/^\*[^*]+\*$/.test(tokens[i]) ||
+         /^-?\d+(?:\.\d+)?$/.test(tokens[i])){
+        totalIndex = i;
+        break;
+      }
+    }
+
+    if(totalIndex < 1 || totalIndex + 1 >= tokens.length) continue;
+
+    const skillName = tokens.slice(0, totalIndex).join(' ').trim();
+    const totalToken = tokens[totalIndex];
+    const initialValue = tokens[totalIndex + 1].trim();
+
+    if(!skillName) continue;
+
+    const totalPlaceholder = totalToken.match(/^\*([^*]+)\*$/);
+    const totalValue = totalPlaceholder
+      ? totalPlaceholder[1].trim()
+      : totalToken.trim();
+
+    if(totalValue === initialValue) continue;
+
+    if(totalValue && totalValue.toLowerCase() !== 'skip'){
+      skills[currentSkillCategory].push({
+        name: skillName,
+        value: totalValue,
+      });
+    }
+  }
+
+  result.skills = skills;
+
+  // ============================================================
+  // CoC6版 武器
+  //
+  // 【武器】の次の行から、
+  // 名前 / 成功率 / ダメージ / 射程 / 攻撃回数 /
+  // 装弾数 / 耐久力 / 故障 / その他
+  // の順で読む。
+  //
+  // フォームに入力するのは 名前 / ダメージ / その他→備考。
+  // 「【冒険の装備とその他の所持品】」で終了する。
+  //
+  // 空欄を含む表形式でも列位置を保てるよう、見出し行の
+  // 列開始位置を利用して固定幅でも解析できるようにする。
+  // ============================================================
+  const weapons = [];
+  let weaponStart = -1;
+  let possessionStart = -1;
+
+  for(let i=0; i<lines.length; i++){
+    if(lines[i].trim() === '【武器】'){
+      weaponStart = i;
+    }
+    if(lines[i].trim() === '【冒険の装備とその他の所持品】'){
+      possessionStart = i;
+      break;
+    }
+  }
+
+  if(weaponStart >= 0 && possessionStart > weaponStart){
+    let headerIndex = -1;
+    for(let i=weaponStart + 1; i<possessionStart; i++){
+      if(lines[i].includes('名前') && lines[i].includes('ダメージ')){
+        headerIndex = i;
+        break;
+      }
+    }
+
+    const weaponDataLines = headerIndex >= 0
+      ? lines.slice(headerIndex + 1, possessionStart)
+      : lines.slice(weaponStart + 1, possessionStart);
+
+    // 表の見出しから列位置を取得する。
+    // 見出しが利用できる場合は空欄セルがあっても列を維持できる。
+    let columnStarts = null;
+    if(headerIndex >= 0){
+      const header = lines[headerIndex];
+      const labels = ['名前','成功率','ダメージ','射程','攻撃回数','装弾数','耐久力','故障'];
+      const starts = labels.map(label => header.indexOf(label));
+      const otherPos = header.indexOf('その他');
+      if(starts.every(pos => pos >= 0) && otherPos >= 0){
+        columnStarts = [...starts, otherPos];
+      }
+    }
+
+    for(const line of weaponDataLines){
+      if(!line.trim()) continue;
+
+      let cells = [];
+
+      if(columnStarts){
+        for(let i=0; i<columnStarts.length; i++){
+          const begin = columnStarts[i];
+          const end = i + 1 < columnStarts.length
+            ? columnStarts[i + 1]
+            : line.length;
+          cells.push(line.slice(begin, end).trim());
+        }
+      }else{
+        cells = line.trim().split(/\s+/);
+      }
+
+      // 9項目が揃っている場合のみ通常の列位置で扱う。
+      // 固定幅解析では [0]=名前, [2]=ダメージ, [8]=その他。
+      if(cells.length >= 9){
+        const name = cells[0].trim();
+        const damage = cells[2].trim();
+        const note = cells[8].trim();
+
+        if(name && name.toLowerCase() !== 'skip'){
+          weapons.push({name, damage, note});
+        }
+      }
+    }
+  }
+
+  result.weapons = weapons;
+
+  // ============================================================
+  // CoC6版 所持品
+  //
+  // 名称 / 単価 / 個数 / 価格 / 効果、備考など
+  // のうち、名称→名前、効果、備考など→備考を入力する。
+  // 「【収入と財産】」で終了する。
+  // ============================================================
+  const possessions = [];
+  let possessionHeaderIndex = -1;
+  let incomeStart = -1;
+
+  if(possessionStart >= 0){
+    for(let i=possessionStart + 1; i<lines.length; i++){
+      const trimmed = lines[i].trim();
+      if(trimmed === '【収入と財産】'){
+        incomeStart = i;
+        break;
+      }
+      if(trimmed.includes('名称') && trimmed.includes('効果、備考など')){
+        possessionHeaderIndex = i;
+      }
+    }
+  }
+
+  if(possessionStart >= 0 && incomeStart > possessionStart){
+    const possessionDataLines = possessionHeaderIndex >= 0
+      ? lines.slice(possessionHeaderIndex + 1, incomeStart)
+      : lines.slice(possessionStart + 1, incomeStart);
+
+    let columnStarts = null;
+    if(possessionHeaderIndex >= 0){
+      const header = lines[possessionHeaderIndex];
+      const namePos = header.indexOf('名称');
+      const unitPos = header.indexOf('単価');
+      const countPos = header.indexOf('個数');
+      const pricePos = header.indexOf('価格');
+      const notePos = header.indexOf('効果、備考など');
+
+      if(namePos >= 0 && unitPos >= 0 && countPos >= 0 &&
+         pricePos >= 0 && notePos >= 0){
+        columnStarts = [namePos, unitPos, countPos, pricePos, notePos];
+      }
+    }
+
+    for(const line of possessionDataLines){
+      if(!line.trim()) continue;
+
+      let cells = [];
+
+      if(columnStarts){
+        for(let i=0; i<columnStarts.length; i++){
+          const begin = columnStarts[i];
+          const end = i + 1 < columnStarts.length
+            ? columnStarts[i + 1]
+            : line.length;
+          cells.push(line.slice(begin, end).trim());
+        }
+      }else{
+        cells = line.trim().split(/\s+/);
+      }
+
+      if(cells.length >= 5){
+        const name = cells[0].trim();
+        const note = cells[4].trim();
+
+        if(name && name.toLowerCase() !== 'skip'){
+          possessions.push({name, note});
+        }
+      }
+    }
+  }
+
+  result.possessions = possessions;
+
+  // ============================================================
+  // CoC6版 通過シナリオ
+  //
+  // 「〈通過したシナリオ名〉」以降、
+  // [シナリオ名] が現れるたびに新しいシナリオを開始する。
+  // 次の [シナリオ名] または 【メモ】 の直前までをメモにする。
+  //
+  // 【収入と財産】～〈遭遇した超自然の存在〉等は無視し、
+  // 〈通過したシナリオ名〉だけを開始点とする。
+  // ============================================================
+  const scenarios = [];
+  let scenarioMarkerIndex = -1;
+  let memoMarkerIndex = -1;
+
+  for(let i=0; i<lines.length; i++){
+    const trimmed = lines[i].trim();
+    if(trimmed === '〈通過したシナリオ名〉'){
+      scenarioMarkerIndex = i;
+    }
+    if(trimmed === '【メモ】'){
+      memoMarkerIndex = i;
+      break;
+    }
+  }
+
+  if(scenarioMarkerIndex >= 0){
+    const scenarioEnd =
+      memoMarkerIndex >= 0 ? memoMarkerIndex : lines.length;
+
+    let currentScenario = null;
+    let currentMemoLines = [];
+
+    const flushScenario = ()=>{
+      if(!currentScenario) return;
+
+      currentScenario.memo = currentMemoLines.join('\n').trim();
+      scenarios.push(currentScenario);
+
+      currentScenario = null;
+      currentMemoLines = [];
+    };
+
+    for(let i=scenarioMarkerIndex + 1; i<scenarioEnd; i++){
+      const raw = lines[i];
+      const trimmed = raw.trim();
+
+      // [シナリオ名] のみの行
+      const scenarioMatch = trimmed.match(/^\[([^\]]+)\]$/);
+
+      if(scenarioMatch){
+        flushScenario();
+
+        const name = scenarioMatch[1].trim();
+        if(name){
+          currentScenario = {
+            name,
+            memo: '',
+          };
+        }
+        continue;
+      }
+
+      // シナリオ名がまだ現れていない部分は無視。
+      if(currentScenario){
+        currentMemoLines.push(raw);
+      }
+    }
+
+    // 【メモ】に到達した場合、その直前までを最後のシナリオに紐づける。
+    // ファイル末尾まで【メモ】がない場合も同様に処理する。
+    flushScenario();
+  }
+
+  result.scenarios = scenarios;
+
+  // ============================================================
+  // CoC6版 メモ
+  //
+  // 【メモ】以降を読み込む。
+  // [カテゴリ名] のみの行が出たら、その直前までを通常メモとし、
+  // そのカテゴリ名以降は自由記述カテゴリとして扱う。
+  //
+  // 例:
+  // 【メモ】
+  // あああああ
+  //
+  // [作成背景]
+  // いいいいい
+  //
+  // [裏メモ]
+  // ...
+  //
+  // → memo = 「あああああ」
+  // → customSections = 作成背景 / 裏メモ / ...
+  // ============================================================
+  const customSections = [];
+  let memoText = '';
+
+  if(memoMarkerIndex >= 0){
+    let currentBlock = null;
+    let currentBlockLines = [];
+
+    const flushCustomBlock = ()=>{
+      if(!currentBlock) return;
+
+      currentBlock.content = currentBlockLines.join('\n').trim();
+      customSections.push(currentBlock);
+
+      currentBlock = null;
+      currentBlockLines = [];
+    };
+
+    const memoLines = [];
+
+    for(let i=memoMarkerIndex + 1; i<lines.length; i++){
+      const raw = lines[i];
+      const trimmed = raw.trim();
+
+      // []だけで構成された行
+      const customMatch = trimmed.match(/^\[([^\]]+)\]$/);
+
+      if(customMatch){
+        if(currentBlock){
+          flushCustomBlock();
+        }else{
+          // 最初の自由記述カテゴリが現れるまでを通常メモとする。
+          memoText = memoLines.join('\n').trim();
+        }
+
+        const title = customMatch[1].trim();
+        if(title){
+          currentBlock = {
+            title,
+            content: '',
+          };
+        }
+        continue;
+      }
+
+      if(currentBlock){
+        currentBlockLines.push(raw);
+      }else{
+        memoLines.push(raw);
+      }
+    }
+
+    if(currentBlock){
+      flushCustomBlock();
+    }else{
+      memoText = memoLines.join('\n').trim();
+    }
+  }
+
+  result.memo = memoText;
+  result.customSections = customSections;
+
+  return result;
+}
+
+function applyImportedBasicInfo(result){
+  if(result.name) document.getElementById('f-name').value = result.name;
+
+  ['reading','occupation','age','gender','height','origin','hairColor','eyeColor','skinColor'].forEach(key=>{
+    if(result[key]) document.getElementById(`basic-${key}`).value = result[key];
+  });
+
+  // CoC6版の能力値を自動入力
+  if(result.abilities){
+    Object.entries(result.abilities).forEach(([key, value])=>{
+      if(value){
+        const input = document.getElementById(`ability-${key}`);
+        if(input) input.value = value;
+      }
+    });
+  }
+
+  // CoC6版の技能値を自動入力
+  if(result.skills){
+    SKILL_CATEGORIES.forEach(cat=>{
+      clearRepeatRows('skill_' + cat.key);
+      (result.skills[cat.key] || []).forEach(item=>{
+        addRepeatRow('skill_' + cat.key, item);
+      });
+    });
+  }
+
+  // CoC6版の武器を自動入力
+  if(result.weapons){
+    clearRepeatRows('weapon');
+    result.weapons.forEach(item=>{
+      addRepeatRow('weapon', item);
+    });
+  }
+
+  // CoC6版の所持品を自動入力
+  if(result.possessions){
+    clearRepeatRows('possession');
+    result.possessions.forEach(item=>{
+      addRepeatRow('possession', item);
+    });
+  }
+
+  // CoC6版の通過シナリオを自動入力
+  if(result.scenarios){
+    clearRepeatRows('scenario');
+    result.scenarios.forEach(item=>{
+      addRepeatRow('scenario', item);
+    });
+  }
+
+  // CoC6版のメモを自動入力
+  if(typeof result.memo === 'string'){
+    document.getElementById('coc-memo').value = result.memo;
+  }
+
+  // []で区切られた自由記述カテゴリを自動入力
+  if(result.customSections){
+    clearCustomSections();
+    result.customSections.forEach(item=>{
+      addCustomSection(item);
+    });
+  }
+}
+
+function toggleSystemFields(systemValue){
+  const isCoC6 = systemValue === COC6_LABEL;
+  document.getElementById('genericFields').style.display = isCoC6 ? 'none' : 'block';
+  document.getElementById('coc6Fields').style.display = isCoC6 ? 'block' : 'none';
+}
+
+function populateCoC6Fields(c){
+  const basic = (c && c.coc6 && c.coc6.basic) || {};
+  const abilities = (c && c.coc6 && c.coc6.abilities) || {};
+  const skills = (c && c.coc6 && c.coc6.skills) || {};
+
+  BASIC_INFO_FIELDS.forEach(f=>{ document.getElementById(`basic-${f.key}`).value = basic[f.key] || ''; });
+  ABILITY_FIELDS.forEach(f=>{ document.getElementById(`ability-${f.key}`).value = abilities[f.key] || ''; });
+
+  SKILL_CATEGORIES.forEach(cat=>{
+    clearRepeatRows('skill_' + cat.key);
+    (skills[cat.key] || []).forEach(item => addRepeatRow('skill_' + cat.key, item));
+  });
+
+  clearRepeatRows('weapon');
+  ((c && c.coc6 && c.coc6.weapons) || []).forEach(item => addRepeatRow('weapon', item));
+
+  clearRepeatRows('possession');
+  ((c && c.coc6 && c.coc6.possessions) || []).forEach(item => addRepeatRow('possession', item));
+
+  clearRepeatRows('scenario');
+  ((c && c.coc6 && c.coc6.scenarios) || []).forEach(item => addRepeatRow('scenario', item));
+
+  document.getElementById('coc-memo').value = (c && c.coc6 && c.coc6.memo) || '';
+
+  clearCustomSections();
+  ((c && c.coc6 && c.coc6.customSections) || []).forEach(item => addCustomSection(item));
+}
+
+function collectCoC6Data(){
+  const basic = {};
+  BASIC_INFO_FIELDS.forEach(f=>{ basic[f.key] = document.getElementById(`basic-${f.key}`).value.trim(); });
+  const abilities = {};
+  ABILITY_FIELDS.forEach(f=>{ abilities[f.key] = document.getElementById(`ability-${f.key}`).value.trim(); });
+  const skills = {};
+  SKILL_CATEGORIES.forEach(cat=>{ skills[cat.key] = collectRows('skill_' + cat.key); });
+
+  return {
+    basic,
+    abilities,
+    skills,
+    weapons: collectRows('weapon'),
+    possessions: collectRows('possession'),
+    scenarios: collectRows('scenario'),
+    memo: document.getElementById('coc-memo').value,
+    customSections: collectCustomSections(),
+  };
+}
+
+function renderCoC6DetailHtml(c){
+  const d = c.coc6 || {};
+  const basic = d.basic || {};
+  const ab = d.abilities || {};
+  const skills = d.skills || {};
+
+  const basicRows = BASIC_INFO_FIELDS.map(f =>
+    `<div class="kv"><span class="k">${escapeHtml(f.label)}</span><span class="v">${escapeHtml(basic[f.key] || '—')}</span></div>`
+  ).join('');
+
+  const abilityRows = ABILITY_FIELDS.map(f =>
+    `<div class="kv"><span class="k">${escapeHtml(f.label)}</span><span class="v">${escapeHtml(ab[f.key] || '—')}</span></div>`
+  ).join('');
+
+  const skillsHtml = SKILL_CATEGORIES.map(cat=>{
+    const items = skills[cat.key] || [];
+    if(!items.length) return '';
+    const rows = items.map(it =>
+      `<div class="kv"><span class="k">${escapeHtml(it.name)}</span><span class="v">${escapeHtml(it.value)}</span></div>`
+    ).join('');
+    return `<div class="skill-category-block"><h4>${escapeHtml(cat.label)}</h4><div class="kv-grid">${rows}</div></div>`;
+  }).join('');
+
+  const weapons = d.weapons || [];
+  const weaponsHtml = weapons.length
+    ? weapons.map(w => `<div class="kv3"><span>${escapeHtml(w.name)}</span><span>${escapeHtml(w.damage)}</span><span>${escapeHtml(w.note)}</span></div>`).join('')
+    : '<p class="body-text">登録なし</p>';
+
+  const possessions = d.possessions || [];
+  const possessionsHtml = possessions.length
+    ? possessions.map(p => `<div class="kv2"><span>${escapeHtml(p.name)}</span><span>${escapeHtml(p.note)}</span></div>`).join('')
+    : '<p class="body-text">登録なし</p>';
+
+  const scenarios = d.scenarios || [];
+  const scenariosHtml = scenarios.length
+    ? scenarios.map(s => `<div class="kv2"><span>${escapeHtml(s.name)}</span><span>${escapeHtml(s.memo)}</span></div>`).join('')
+    : '<p class="body-text">登録なし</p>';
+
+  const memoHtml = d.memo ? `<div class="sheet-section"><h3>メモ</h3><div class="body-text">${escapeHtml(d.memo)}</div></div>` : '';
+
+  const customSections = d.customSections || [];
+  const customSectionsHtml = customSections.map(s =>
+    `<div class="sheet-section"><h3>${escapeHtml(s.title || '(無題のカテゴリ)')}</h3><div class="body-text">${escapeHtml(s.content)}</div></div>`
+  ).join('');
+
+  return `
+    <div class="sheet-section"><h3>基本情報</h3><div class="kv-grid">${basicRows}</div></div>
+    <div class="sheet-section"><h3>能力値</h3><div class="kv-grid">${abilityRows}</div></div>
+    <div class="sheet-section"><h3>技能値</h3>${skillsHtml || '<p class="body-text">登録なし</p>'}</div>
+    <div class="sheet-section"><h3>武器</h3>${weaponsHtml}</div>
+    <div class="sheet-section"><h3>所持品</h3>${possessionsHtml}</div>
+    <div class="sheet-section"><h3>通過シナリオ</h3>${scenariosHtml}</div>
+    ${memoHtml}
+    ${customSectionsHtml}
+  `;
+}
+
+function populateSystemSelect(selectEl, currentValue){
+  let html = '<option value="">(未設定)</option>';
+  html += SYSTEM_OPTIONS.map(opt => `<option value="${escapeHtml(opt)}">${escapeHtml(opt)}</option>`).join('');
+  // 過去に登録した値が候補リストに無い場合も、消えずに選べるようにしておく
+  if(currentValue && !SYSTEM_OPTIONS.includes(currentValue)){
+    html += `<option value="${escapeHtml(currentValue)}">${escapeHtml(currentValue)}（候補外）</option>`;
+  }
+  selectEl.innerHTML = html;
+  selectEl.value = currentValue || '';
+}
+
+function openForm(id){
+  editingId = id || null;
+  const c = id ? characters.find(x=>x.id===id) : null;
+  formTitle.textContent = c ? 'キャラクターを編集' : '新しいキャラクター';
+  document.getElementById('f-name').value = c ? c.name : '';
+  const systemValue = c ? (c.system||'') : '';
+  populateSystemSelect(document.getElementById('f-system'), systemValue);
+  document.getElementById('f-image').value = c ? (c.imageUrl||'') : '';
+  document.getElementById('f-tagline').value = c ? (c.tagline||'') : '';
+  document.getElementById('f-tags').value = c ? (c.tags||[]).join(', ') : '';
+  document.getElementById('f-stats').value = c ? (c.stats||'') : '';
+  document.getElementById('f-equipment').value = c ? (c.equipment||'') : '';
+  document.getElementById('f-memo').value = c ? (c.memo||'') : '';
+  populateCoC6Fields(c);
+  toggleSystemFields(systemValue);
+  formOverlay.classList.add('open');
+}
+function closeForm(){ formOverlay.classList.remove('open'); editingId = null; }
+
+async function handleSave(){
+  const name = document.getElementById('f-name').value.trim();
+  if(!name){ showToast('名前を入力してください'); return; }
+  const tags = document.getElementById('f-tags').value
+    .split(',').map(t=>t.trim()).filter(Boolean);
+
+  const systemValue = document.getElementById('f-system').value.trim();
+
+  const data = {
+    name,
+    system: systemValue,
+    imageUrl: document.getElementById('f-image').value.trim(),
+    tagline: document.getElementById('f-tagline').value.trim(),
+    tags,
+    stats: document.getElementById('f-stats').value,
+    equipment: document.getElementById('f-equipment').value,
+    memo: document.getElementById('f-memo').value,
+  };
+
+  if(systemValue === COC6_LABEL){
+    data.coc6 = collectCoC6Data();
+  }
+
+  if(editingId){
+    const idx = characters.findIndex(c=>c.id===editingId);
+    if(idx > -1) characters[idx] = {...characters[idx], ...data};
+  }else{
+    data.id = 'char_' + Date.now() + '_' + Math.random().toString(36).slice(2,7);
+    characters.push(data);
+  }
+
+  await saveCharacters();
+  closeForm();
+  render();
+  showToast('保存しました');
+}
+
+document.getElementById('openAddBtn').addEventListener('click', ()=>openForm(null));
+document.getElementById('formCloseBtn').addEventListener('click', closeForm);
+document.getElementById('formCancelBtn').addEventListener('click', closeForm);
+document.getElementById('formSaveBtn').addEventListener('click', handleSave);
+searchInput.addEventListener('input', render);
+detailOverlay.addEventListener('click', (e)=>{ if(e.target===detailOverlay) closeDetail(); });
+formOverlay.addEventListener('click', (e)=>{ if(e.target===formOverlay) closeForm(); });
+
+document.getElementById('f-system').addEventListener('change', (e)=> toggleSystemFields(e.target.value));
+
+document.getElementById('coc-import-file').addEventListener('change', (e)=>{
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = ()=>{
+    try{
+      const parsed = parseIaCharaBasicInfo(reader.result);
+      applyImportedBasicInfo(parsed);
+      showToast('いあきゃらテキストから各カテゴリを読み込みました');
+    }catch(err){
+      showToast('テキストファイルの解析に失敗しました');
+    }
+  };
+  reader.onerror = ()=> showToast('ファイルの読み込みに失敗しました');
+  reader.readAsText(file, 'UTF-8');
+  e.target.value = ''; // 同じファイルを選び直しても再度読み込めるようにリセット
+});
+
+// 「＋追加」ボタン(武器・所持品・シナリオ・技能・追加カテゴリの各種)をまとめて処理
+document.getElementById('coc6Fields').addEventListener('click', (e)=>{
+  const btn = e.target.closest('.btn-add-row');
+  if(!btn) return;
+  if(btn.dataset.target === 'customSection'){
+    addCustomSection({});
+  }else{
+    addRepeatRow(btn.dataset.target, {});
+  }
+});
+
+buildFieldGrid('basicInfoGrid', BASIC_INFO_FIELDS, 'basic');
+buildFieldGrid('abilityGrid', ABILITY_FIELDS, 'ability');
+buildSkillCategoriesUI();
+
+loadCharacters();
+</script>
+
+</body>
+</html>
